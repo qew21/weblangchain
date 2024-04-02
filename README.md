@@ -1,8 +1,9 @@
 # 🦜️🌐 WebLangChain
+使用通义千问LLM，通过Tavily的API获取网页内容，然后将其传递给LLM进行生成。
 
-This repo is an example of performing retrieval using the entire internet as a document store.
+## ✅ HuggingFaceEmbeddings
+通过 HuggingFaceEmbeddings 加载本地模型，节省调用费用，也避免网络访问限制
 
-**Try it live:** [weblangchain.vercel.app](https://weblangchain.vercel.app)
 
 ## ✅ Running locally
 

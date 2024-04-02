@@ -9,10 +9,13 @@ import langsmith
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.callbacks.manager import CallbackManagerForRetrieverRun
-from langchain.chat_models import ChatAnthropic, ChatOpenAI, ChatVertexAI
+from langchain_community.chat_models.tongyi import (
+    ChatTongyi,
+)
 from langchain.document_loaders import AsyncHtmlLoader
 from langchain.document_transformers import Html2TextTransformer
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
+
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
 from langchain.retrievers import (
     ContextualCompressionRetriever,
@@ -173,7 +176,7 @@ class GoogleCustomSearchRetriever(BaseRetriever):
 
 
 def get_retriever():
-    embeddings = OpenAIEmbeddings()
+    embeddings = HuggingFaceEmbeddings(model_name="text2vec-base-chinese")
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=20)
     relevance_filter = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.8)
     pipeline_compressor = DocumentCompressorPipeline(
@@ -320,48 +323,11 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
 
 has_google_creds = os.path.isfile(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
 
-llm = ChatOpenAI(
-    model="gpt-3.5-turbo-16k",
-    # model="gpt-4",
-    streaming=True,
-    temperature=0.1,
-).configurable_alternatives(
-    # This gives this field an id
-    # When configuring the end runnable, we can then use this id to configure this field
-    ConfigurableField(id="llm"),
-    default_key="openai",
-    anthropic=ChatAnthropic(
-        model="claude-2",
-        max_tokens=16384,
-        temperature=0.1,
-        anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY", "not_provided"),
-    ),
-)
-
-if has_google_creds:
-    llm = ChatOpenAI(
-        model="gpt-3.5-turbo-16k",
-        # model="gpt-4",
-        streaming=True,
-        temperature=0.1,
-    ).configurable_alternatives(
-        # This gives this field an id
-        # When configuring the end runnable, we can then use this id to configure this field
-        ConfigurableField(id="llm"),
-        default_key="openai",
-        anthropic=ChatAnthropic(
-            model="claude-2",
-            max_tokens=16384,
-            temperature=0.1,
-            anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY", "not_provided"),
-        ),
-        googlevertex=ChatVertexAI(
-            model_name="chat-bison-32k",
-            temperature=0.1,
-            max_output_tokens=8192,
-            stream=True,
-        ),
+llm = ChatTongyi(
+        model_name="qwen-max",
+        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY", "not_provided"),
     )
+
 
 retriever = get_retriever()
 
