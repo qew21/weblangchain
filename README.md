@@ -49,15 +49,6 @@ Under the hood, the chain is converted to a FastAPI server with various endpoint
 This also includes a playground that you can use to interactively swap and configure various pieces of the chain.
 You can find it running at `http://localhost:8080/chat/playground`.
 
-## ☕ Running locally (JS backend)
-
-Note that LangServe is not currently supported in JS, and customization of the retriever and model, as well as the playground, are unavailable.
-
-1. Install frontend dependencies by running `cd nextjs`, then `yarn`.
-2. Populate a `nextjs/.env.local` file with your own versions of keys from the `nextjs/.env.example` file, and set `NEXT_PUBLIC_API_BASE_URL` to `"http://localhost:3000/api"`.
-3. Run the app with `yarn dev`.
-4. Open [localhost:3000](http://localhost:3000) in your browser.
-
 ## ⚙️ How it works
 
 The general retrieval flow looks like this:
