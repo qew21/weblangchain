@@ -1,9 +1,11 @@
 # 🦜️🌐 WebLangChain
-使用通义千问LLM，通过Tavily的API获取网页内容，然后将其传递给LLM进行生成。
+Using QianWen LLM via Tavily API to fetch webpage content and pass it to the LLM for generation.
 
 ## ✅ HuggingFaceEmbeddings
-通过 HuggingFaceEmbeddings 加载本地模型，节省调用费用，也避免网络访问限制
+Load local models with HuggingFaceEmbeddings to save on invocation costs and circumvent network access restrictions.
 
+## ✅ Custom Retriever Demo
+YouRetriever demonstrates an example of retrieving information from multiple web pages, storing it in a vector database, and serving as a retriever.
 
 ## ✅ Running locally
 
@@ -37,14 +39,6 @@ export LANGCHAIN_API_KEY=
 export LANGCHAIN_PROJECT=
 ```
 
-You will also need to put your Google Cloud credentials in a JSON file under `.google_vertex_ai_credentials.json` in the main directory if you would like to
-use Google Vertex as an option. If you're not using Vertex, you'll need to remove `ChatVertexAI` from `main.py`.
-
-3. Start the Python backend with `poetry run make start`.
-4. Install frontend dependencies by running `cd nextjs`, then `yarn`.
-5. Run the frontend with `yarn dev` for frontend.
-6. Open [localhost:3000](http://localhost:3000) in your browser.
-
 Under the hood, the chain is converted to a FastAPI server with various endpoints via [LangServe](https://github.com/langchain-ai/langserve).
 This also includes a playground that you can use to interactively swap and configure various pieces of the chain.
 You can find it running at `http://localhost:8080/chat/playground`.
@@ -70,9 +64,5 @@ It's built using:
 - [LangChain](https://github.com/langchain-ai/langchain/) for orchestration
 - [LangServe](https://github.com/langchain-ai/langserve) to directly expose LangChain runnables as endpoints
 - [FastAPI](https://fastapi.tiangolo.com/)
-- [Next.js](https://nextjs.org) for the frontend
+- [Chroma](https://github.com/chroma-core/chroma) as embedding database
 
-## 🚀 Deployment
-
-The live version is hosted on [Fly.dev](https://fly.dev) and [Vercel](https://vercel.com).
-The backend Python logic is found in `main.py`, and the frontend Next.js app is under `nextjs/`.

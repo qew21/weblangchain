@@ -6,6 +6,8 @@ from operator import itemgetter
 from typing import List, Optional, Sequence, Tuple, Union
 
 import langsmith
+import requests
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.callbacks.manager import CallbackManagerForRetrieverRun
@@ -44,6 +46,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # Backup
 from langchain.utilities import GoogleSearchAPIWrapper
+from langchain_community.vectorstores.chroma import Chroma
 from langserve import add_routes
 from langsmith import Client
 from pydantic import BaseModel, Field
@@ -175,10 +178,64 @@ class GoogleCustomSearchRetriever(BaseRetriever):
         return docs
 
 
+def get_embeddings():
+    return HuggingFaceEmbeddings(model_name="text2vec-base-chinese")
+
+
+def get_urls(headers):
+    url = 'http://books.studygolang.com/gopl-zh/ch13/ch13-03.html'
+
+
+    if os.path.exists('test.html'):
+        with open('test.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+    else:
+        response = requests.get(url, headers=headers, verify=False)
+        response.encoding = 'utf-8'
+        print(response.text)
+        with open('test.html', 'w', encoding='utf-8') as f:
+            f.write(response.text)
+        content = response.text
+    soup = BeautifulSoup(content, 'html.parser')
+
+    urls = [a['href'] for a in soup.find_all('a', href=True)]
+    base_url = "http://books.studygolang.com/gopl-zh/"
+    full_urls = [base_url + url.replace('../', '') for url in urls if not url.startswith('http') ]
+    return full_urls
+
+
+def custom_retriever():
+    persist_directory = 'docs/chroma/'
+
+    if os.path.exists(persist_directory):
+        vectordb = Chroma(
+            embedding_function=get_embeddings(),
+            persist_directory=persist_directory
+        )
+    else:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/79.0.3945.88 Safari/537.36',
+        }
+        urls_to_look = get_urls(headers)
+        loader = AsyncHtmlLoader(web_path=urls_to_look, header_template=headers, verify_ssl=False,
+                                 ignore_load_errors=True)
+        html2text = Html2TextTransformer()
+        docs = loader.load()
+        docs = list(html2text.transform_documents(docs))
+        splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=20)
+        splits = splitter.split_documents(docs)
+        vectordb = Chroma.from_documents(
+            documents=splits,
+            embedding=get_embeddings(),
+            persist_directory=persist_directory
+        )
+    return vectordb.as_retriever()
+
+
 def get_retriever():
-    embeddings = HuggingFaceEmbeddings(model_name="text2vec-base-chinese")
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=20)
-    relevance_filter = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.8)
+    relevance_filter = EmbeddingsFilter(embeddings=get_embeddings(), similarity_threshold=0.8)
     pipeline_compressor = DocumentCompressorPipeline(
         transformers=[splitter, relevance_filter]
     )
@@ -192,9 +249,7 @@ def get_retriever():
     google_retriever = ContextualCompressionRetriever(
         base_compressor=pipeline_compressor, base_retriever=base_google_retriever
     )
-    base_you_retriever = YouRetriever(
-        ydc_api_key=os.environ.get("YDC_API_KEY", "not_provided")
-    )
+    base_you_retriever = custom_retriever()
     you_retriever = ContextualCompressionRetriever(
         base_compressor=pipeline_compressor, base_retriever=base_you_retriever
     )
